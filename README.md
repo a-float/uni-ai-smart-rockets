@@ -1,2 +1,2 @@
-# uni-ai-smart-rockets
+# smart-rockets
 3rd projekt z biolki
