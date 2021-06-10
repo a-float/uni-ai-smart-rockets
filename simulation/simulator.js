@@ -1,8 +1,12 @@
 'use strict'
-define(['wall', 'rocket'], function (Wall, Rocket) {
+define(['wall', 'rocket', 'obstacle'], function (Wall, Rocket, Obstacle) {
     const Engine = Matter.Engine
     const Render = Matter.Render
     const Composite = Matter.Composite
+    const Mouse = Matter.Mouse
+    const Events = Matter.Events
+    const Vector = Matter.Vector
+    const MouseConstraint = Matter.MouseConstraint
 
     class Simulator {
         constructor (size) {
@@ -22,6 +26,8 @@ define(['wall', 'rocket'], function (Wall, Rocket) {
                     wireframes: true
                 }
             })
+            this.mouseConstraint = this.setMouseConstraint()
+            this.obstacleStartPosition = {x:-1, y:-1}
             this.setWalls()
             Render.run(this.render)
         }
@@ -76,12 +82,56 @@ define(['wall', 'rocket'], function (Wall, Rocket) {
         addRocket (pos, genome) {
             const rocket = new Rocket(pos, genome)
             this.rockets.push(rocket)
-            console.log(rocket)
             Composite.add(this.engine.world, rocket.body)
         }
 
         getRandomPosition () {
             return { x: Math.random() * this.size.x, y: Math.random() * this.size.y }
+        }
+
+        setMouseConstraint(){
+            const mouse = Mouse.create(this.render.canvas);
+            const mouseConstraint = MouseConstraint.create(this.engine, {
+                mouse: mouse,
+                constraint: {
+                    stiffness: 0.2,
+                    render: {
+                        visible: true
+                    }
+                }
+            });
+            // dont capture the mouse scroll
+            mouseConstraint.mouse.element.removeEventListener('mousewheel', mouse.mousewheel);
+            mouseConstraint.mouse.element.removeEventListener('DOMMouseScroll', mouse.mousewheel);
+            Events.on(mouseConstraint, 'mousedown', this.onMouseDown.bind(this))
+            Events.on(mouseConstraint, 'mouseup', this.onMouseUp.bind(this))
+            Events.on(mouseConstraint, 'startdrag', this.onMouseStartDrag.bind(this))
+            Events.on(mouseConstraint, 'enddrag', this.onMouseEndDrag.bind(this))
+            return mouseConstraint
+        }
+
+        addObstacle(topleft, width, height){
+            const newObstacle = new Obstacle(topleft.x, topleft.y, width, height)
+            Composite.add(this.engine.world, newObstacle.body)
+        }
+
+        onMouseStartDrag(){
+        }
+
+        onMouseEndDrag(){
+        }
+
+        onMouseDown(){
+            this.obstacleStartPosition = Object.assign({}, this.mouseConstraint.mouse.position)
+        }
+
+        onMouseUp(){
+            const endDragPos = this.mouseConstraint.mouse.position
+            const posDiff = Vector.sub(this.obstacleStartPosition, endDragPos)
+            if(Vector.magnitudeSquared(posDiff) > 10){
+                const center = Vector.add(endDragPos, Vector.mult(posDiff, 0.5))
+                this.addObstacle(center, Math.abs(posDiff.x), Math.abs(posDiff.y))
+            }
         }
     }
     return Simulator.prototype.constructor

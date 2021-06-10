@@ -26,7 +26,7 @@ define('rocket', () => {
                 return true
             } else {
                 this.currentGeneIndex += 1
-                console.log('rocket: apllying the force')
+                // console.log('rocket: apllying the force')
                 const tipPos = Vector.add(this.body.position, Vector.rotate({ x: 0, y: 3 }, this.body.angle))
                 Matter.Body.applyForce(this.body, tipPos,
                     Vector.mult(this.genome[this.currentGeneIndex], 0.0005))
