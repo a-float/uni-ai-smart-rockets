@@ -1,5 +1,6 @@
 'use strict'
-define(['wall', 'rocket', 'obstacle'], function (Wall, Rocket, Obstacle) {
+
+define('simulator', ['wall', 'rocket', 'obstacle'], function (Wall, Rocket, Obstacle) {
     const Engine = Matter.Engine
     const Render = Matter.Render
     const Composite = Matter.Composite
@@ -81,6 +82,7 @@ define(['wall', 'rocket', 'obstacle'], function (Wall, Rocket, Obstacle) {
 
         addRocket (pos, genome) {
             const rocket = new Rocket(pos, genome)
+            // console.log(rocket.body.collisionFilter)
             this.rockets.push(rocket)
             Composite.add(this.engine.world, rocket.body)
         }

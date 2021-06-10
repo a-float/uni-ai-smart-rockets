@@ -1,5 +1,6 @@
 'use strict'
-define('rocket', () => {
+
+define('rocket', ['collisionFilters'], (colFilters) => {
     const Vector = Matter.Vector
     class Rocket {
         constructor (pos, genome) {
@@ -15,6 +16,7 @@ define('rocket', () => {
                 vertices: vertices,
                 frictionAir: 0.01
             })
+            this.body.collisionFilter = colFilters.rocket         
         }
 
         /**
