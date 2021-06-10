@@ -1,6 +1,6 @@
 'use strict'
 
-define('simulator', ['wall', 'rocket', 'obstacle'], function (Wall, Rocket, Obstacle) {
+define('simulator', ['wall', 'rocket', 'obstacle', 'target'], function (Wall, Rocket, Obstacle, Target) {
     const Engine = Matter.Engine
     const Render = Matter.Render
     const Composite = Matter.Composite
@@ -12,8 +12,12 @@ define('simulator', ['wall', 'rocket', 'obstacle'], function (Wall, Rocket, Obst
     class Simulator {
         constructor (size) {
             this.size = size
+            this.target = new Target(this.size.x*0.5, this.size.y*0.5)
             this.rockets = []
-            this.rocketUpdateDelay = 1
+            this.walls = []
+            this.obstacles = []
+            this.isGenomeOver = false
+            this.rocketUpdateDelay = 1 // in seconds
             this.looping = false
             this.engine = Engine.create({
                 gravity: { x: 0, y: 0 }
@@ -24,12 +28,14 @@ define('simulator', ['wall', 'rocket', 'obstacle'], function (Wall, Rocket, Obst
                 options: {
                     width: size.x,
                     height: size.y,
-                    wireframes: true
+                    wireframes: true,
+                    showCollisions: true
                 }
             })
             this.mouseConstraint = this.setMouseConstraint()
             this.obstacleStartPosition = {x:-1, y:-1}
             this.setWalls()
+            Composite.add(this.engine.world, this.target.body)
             Render.run(this.render)
         }
 
@@ -49,11 +55,17 @@ define('simulator', ['wall', 'rocket', 'obstacle'], function (Wall, Rocket, Obst
                 const now = performance.now()
                 if (now - this.lastDrawTime > 1000 / 60) { // the framerate
                     // do the loopy stuff here
+                    if (!this.isGenomeOver){
+                        // console.log(now, this.lastRocketUpdate)
+                        if (now - this.lastRocketUpdate > this.rocketUpdateDelay * 1000) {
+                            this.lastRocketUpdate = now
+                            console.log('Advancing the rockets')
+                            this.advanceRockets()
+                        }
+                    }
                     Engine.update(this.engine, now - this.lastDrawTime)
-                    if (now - this.lastRocketUpdate > this.rocketUpdateDelay * 1000) {
-                        this.lastRocketUpdate = now
-                        console.log('Advancing the rockets')
-                        this.updateRockets()
+                    for(const rocket of this.rockets){
+                        rocket.updateScore(this.target, this.walls, this.obstacles)
                     }
                 }
                 requestAnimationFrame(this._loop.bind(this))
@@ -68,21 +80,27 @@ define('simulator', ['wall', 'rocket', 'obstacle'], function (Wall, Rocket, Obst
                 right: new Wall(wallWidth * 0.1 + this.size.x, this.size.y * 0.5, wallWidth, this.size.y),
                 left: new Wall(-wallWidth * 0.1, this.size.y * 0.5, wallWidth, this.size.y)
             }
+            this.walls = [...Object.values(walls)]
             for (const [key, value] of Object.entries(walls)) {
                 value.body.label = key + '_wall'
             }
             Composite.add(this.engine.world, Object.values(walls).map(wall => wall.body))
         }
 
-        updateRockets () {
+        advanceRockets () {
+            let isDone = true
             for (const rocket of this.rockets) {
-                rocket.advance()
+                isDone = rocket.advance() && isDone 
+            }
+            if(isDone){
+                this.isGenomeOver = true
+                console.log("The genome is over")
+                console.log(this.rockets.map(r => {return {score:r.score, pos:r.body.position}}))
             }
         }
 
         addRocket (pos, genome) {
             const rocket = new Rocket(pos, genome)
-            // console.log(rocket.body.collisionFilter)
             this.rockets.push(rocket)
             Composite.add(this.engine.world, rocket.body)
         }
@@ -113,8 +131,9 @@ define('simulator', ['wall', 'rocket', 'obstacle'], function (Wall, Rocket, Obst
         }
 
         addObstacle(topleft, width, height){
-            const newObstacle = new Obstacle(topleft.x, topleft.y, width, height)
-            Composite.add(this.engine.world, newObstacle.body)
+            const obstacle = new Obstacle(topleft.x, topleft.y, width, height)
+            this.obstacles.push(obstacle)
+            Composite.add(this.engine.world, obstacle.body)
         }
 
         onMouseStartDrag(){

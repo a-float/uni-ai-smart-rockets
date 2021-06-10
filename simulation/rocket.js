@@ -5,9 +5,11 @@ define('rocket', ['collisionFilters'], (colFilters) => {
     class Rocket {
         constructor (pos, genome) {
             this.genome = genome
+            this.score = 0 // used in evaulating fitness
             this.currentGeneIndex = 0
+            this.size = 20
             const vertices = [
-                { x: -10, y: 0 }, { x: 0, y: 30 }, { x: 10, y: 0 }, { x: 0, y: 5 }
+                { x: -this.size*0.33, y: 0 }, { x: 0, y: this.size }, { x: this.size*0.33, y: 0 }, { x: 0, y: this.size*0.20 }
             ]
             this.body = Matter.Body.create({
                 position: pos,
@@ -25,13 +27,30 @@ define('rocket', ['collisionFilters'], (colFilters) => {
          */
         advance () {
             if (this.currentGeneIndex === this.genome.length - 1) {
-                return true
+                return true // rocket wants to continue
             } else {
                 this.currentGeneIndex += 1
-                // console.log('rocket: apllying the force')
-                const tipPos = Vector.add(this.body.position, Vector.rotate({ x: 0, y: 3 }, this.body.angle))
+                const tipPos = Vector.add(this.body.position, Vector.rotate({ x: 0, y: this.size*0.1 }, this.body.angle))
                 Matter.Body.applyForce(this.body, tipPos,
                     Vector.mult(this.genome[this.currentGeneIndex], 0.0005))
+                return false // rocket doesn't want to continue, coz its out of genes
+            }
+        }
+
+        updateScore(target, walls, obstacles){
+            for(const wall of walls){
+                if(Matter.SAT.collides(this.body, wall.body)){
+                    this.score -= 1
+                }
+            }
+            for(const obstacle of obstacles){
+                if(Matter.SAT.collides(this.body, obstacle.body)){
+                    this.score -= 1
+                }
+            }
+            if(Vector.magnitudeSquared(this.body.position, target.body.position) < target.radius**2){
+                this.score += 10
+                console.log("near the target!")
             }
         }
     }

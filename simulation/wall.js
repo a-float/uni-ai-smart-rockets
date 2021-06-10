@@ -7,7 +7,7 @@ define('wall', ['collisionFilters'], (colFilters) => {
             this.width = w
             this.height = h
 
-            this.body.collisionFilter = colFilters.rocket               
+            this.body.collisionFilter = colFilters.wall
         }
     }
     return Wall.prototype.constructor

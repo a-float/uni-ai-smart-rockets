@@ -20,7 +20,7 @@ require(['simulator'], function (Simulator) {
     const sim = new Simulator(size)
     sim.rocketUpdateDelay = 1 // in seconds
     for (let i = 0; i < 10; i++) { // spawn the rockets and give them random genomes
-        sim.addRocket(sim.getRandomPosition(), getRandomGenome(10, 0.5, 0.7))
+        sim.addRocket(sim.getRandomPosition(), getRandomGenome(10, 0.5, 1))
     }
 
     sim.startLoop()
