@@ -1,6 +1,8 @@
 'use strict'
 
-define('simulator', ['wall', 'rocket', 'obstacle', 'target'], function (Wall, Rocket, Obstacle, Target) {
+define('simulator', 
+    ['wall', 'rocket', 'obstacle', 'target', 'genetics'],
+    function (Wall, Rocket, Obstacle, Target, Genetics) {
     const Engine = Matter.Engine
     const Render = Matter.Render
     const Composite = Matter.Composite
@@ -9,16 +11,38 @@ define('simulator', ['wall', 'rocket', 'obstacle', 'target'], function (Wall, Ro
     const Vector = Matter.Vector
     const MouseConstraint = Matter.MouseConstraint
 
-    class Simulator {
-        constructor (size) {
+    class Simulator {   // probably pass arguments as one object
+        constructor (rocketsNo, iterationsNo, size, rocketStartPos, targetPos, geneLength=5) {
             this.size = size
-            this.target = new Target(this.size.x*0.5, this.size.y*0.5)
+            this.geneLength = 15 //geneLength 
+            this.rocketsNo = rocketsNo
+            this.rocketStartPos = rocketStartPos
+            this.target = new Target(targetPos.x, targetPos.y)
+            this.iterations = 30 //iterationsNo
+            // end of saving the passed arguments
+            // state of the simulator
+            this.currentIteration = 0
             this.rockets = []
             this.walls = []
             this.obstacles = []
             this.isGenomeOver = false
-            this.rocketUpdateDelay = 1 // in seconds
             this.looping = false
+            // customizables
+            /**
+             * [ms] time between adjacent gene advancements.
+             * Change this to change visual speed of the simulation
+             */
+            this.rocketUpdateDelay = 100
+            /**
+             * for how many engine steps rockets accelerate in every gene. 
+             * If big it make rocket movement more "robotic"
+             */
+            this.engineStepPerGene = 25
+            /*
+            * how fast time passes inside the engine.
+            */
+            this.simTimeStep = 8000
+            
             this.engine = Engine.create({
                 gravity: { x: 0, y: 0 }
             })
@@ -29,14 +53,38 @@ define('simulator', ['wall', 'rocket', 'obstacle', 'target'], function (Wall, Ro
                     width: size.x,
                     height: size.y,
                     wireframes: true,
-                    showCollisions: true
+                    showCollisions: true,
+                    showIds: true
                 }
             })
+            // making things run
             this.mouseConstraint = this.setMouseConstraint()
             this.obstacleStartPosition = {x:-1, y:-1}
             this.setWalls()
             Composite.add(this.engine.world, this.target.body)
             Render.run(this.render)
+        }
+
+        setUpRockets(genomes){
+            for(const rocket of this.rockets){
+                Composite.remove(this.engine.world, rocket.body)
+            }
+            this.rockets = []
+            for (let i = 0; i < this.rocketsNo; i++) { // spawn the rockets and give them random genomes
+                this.addRocket(this.rocketStartPos, genomes[i])
+            }
+        }
+
+        /**
+         * Call to begin the simulation
+         */
+        startSimulation () {
+            const randomGenomes = (new Array(this.rocketsNo))
+            .fill(0)
+            .map(_ => Genetics.getRandomGenome(this.geneLength))
+            this.setUpRockets(randomGenomes)
+            console.log(randomGenomes)
+            this.startLoop()
         }
 
         startLoop () {
@@ -50,24 +98,51 @@ define('simulator', ['wall', 'rocket', 'obstacle', 'target'], function (Wall, Ro
             this.looping = false
         }
 
+        /**
+         * Called when the generation ends. If it was the last iteration, stops the simulation.
+         */
+        onEndOfGeneration(){
+            this.stopLoop()
+            // print the score
+            const results = this.rockets.map(r => {return {score:r.score, id:r.body.id}})
+            results.sort((a,b) => b.score - a.score)
+            console.log(results)
+            if(this.currentIteration++ == this.iterations){
+                console.log("End of the evolution")
+            }
+            else{
+                const newGenomes = Genetics.evolve(this.rockets.map(r => {
+                    return {score: r.score, genome: r.genome}
+                }))
+                this.isGenomeOver = false
+                this.setUpRockets(newGenomes)
+                this.startLoop()
+            }
+        }
+
         _loop () {
             if (this.looping) {
                 const now = performance.now()
-                if (now - this.lastDrawTime > 1000 / 60) { // the framerate
-                    // do the loopy stuff here
-                    if (!this.isGenomeOver){
-                        // console.log(now, this.lastRocketUpdate)
-                        if (now - this.lastRocketUpdate > this.rocketUpdateDelay * 1000) {
+                // execute the loop engineStepPerGene times per every rocketUpdateDelay seconds
+                if (now - this.lastDrawTime > this.rocketUpdateDelay/this.engineStepPerGene) {
+                    if (now - this.lastRocketUpdate > (this.rocketUpdateDelay)) {
+                        if (this.isGenomeOver){
+                            console.log('End of the generation')
+                            this.onEndOfGeneration()
+                        }
+                        else {
                             this.lastRocketUpdate = now
                             console.log('Advancing the rockets')
                             this.advanceRockets()
                         }
                     }
-                    Engine.update(this.engine, now - this.lastDrawTime)
+                    Engine.update(this.engine, this.simTimeStep)
                     for(const rocket of this.rockets){
+                        rocket.updateAcceleration()
                         rocket.updateScore(this.target, this.walls, this.obstacles)
                     }
                 }
+                
                 requestAnimationFrame(this._loop.bind(this))
             }
         }
@@ -87,15 +162,17 @@ define('simulator', ['wall', 'rocket', 'obstacle', 'target'], function (Wall, Ro
             Composite.add(this.engine.world, Object.values(walls).map(wall => wall.body))
         }
 
+        /**
+         * Makes rocket use the next gene of their genomes
+         */
         advanceRockets () {
             let isDone = true
             for (const rocket of this.rockets) {
                 isDone = rocket.advance() && isDone 
-            }
+            } 
+            // every rocket used up all of their genome (all the sizes are the same anyway, so it is kinda unnecessary)
             if(isDone){
                 this.isGenomeOver = true
-                console.log("The genome is over")
-                console.log(this.rockets.map(r => {return {score:r.score, pos:r.body.position}}))
             }
         }
 
@@ -123,6 +200,7 @@ define('simulator', ['wall', 'rocket', 'obstacle', 'target'], function (Wall, Ro
             // dont capture the mouse scroll
             mouseConstraint.mouse.element.removeEventListener('mousewheel', mouse.mousewheel);
             mouseConstraint.mouse.element.removeEventListener('DOMMouseScroll', mouse.mousewheel);
+            // set the event handlers
             Events.on(mouseConstraint, 'mousedown', this.onMouseDown.bind(this))
             Events.on(mouseConstraint, 'mouseup', this.onMouseUp.bind(this))
             Events.on(mouseConstraint, 'startdrag', this.onMouseStartDrag.bind(this))
@@ -142,6 +220,7 @@ define('simulator', ['wall', 'rocket', 'obstacle', 'target'], function (Wall, Ro
         onMouseEndDrag(){
         }
 
+        // creating the obstacles
         onMouseDown(){
             this.obstacleStartPosition = Object.assign({}, this.mouseConstraint.mouse.position)
         }

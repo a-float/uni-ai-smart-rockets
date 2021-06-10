@@ -16,7 +16,7 @@ define('rocket', ['collisionFilters'], (colFilters) => {
                 mass: 5e3,
                 inertia: 1e5,
                 vertices: vertices,
-                frictionAir: 0.01
+                frictionAir: 0.05
             })
             this.body.collisionFilter = colFilters.rocket         
         }
@@ -26,32 +26,50 @@ define('rocket', ['collisionFilters'], (colFilters) => {
          * @returns True if the whole genom has been traversed => the rocket is pretty much done
          */
         advance () {
-            if (this.currentGeneIndex === this.genome.length - 1) {
-                return true // rocket wants to continue
-            } else {
-                this.currentGeneIndex += 1
-                const tipPos = Vector.add(this.body.position, Vector.rotate({ x: 0, y: this.size*0.1 }, this.body.angle))
-                Matter.Body.applyForce(this.body, tipPos,
-                    Vector.mult(this.genome[this.currentGeneIndex], 0.0005))
-                return false // rocket doesn't want to continue, coz its out of genes
+            this.currentGeneIndex += 1
+            if (this.currentGeneIndex === this.genome.length-1) {
+                return true // rocket is done
             }
+            else {
+                return false // rocket rocket is not done yet
+            }
+        }
+        
+        /**
+         * Apply the current gene acceleration steering
+         */
+        updateAcceleration(){
+            const tipPos = Vector.add(
+                this.body.position, 
+                Vector.rotate({ x: 0, y: this.size*0.1 }, this.body.angle))
+                
+            Matter.Body.applyForce(
+                this.body, 
+                tipPos,
+                Vector.mult(this.genome[this.currentGeneIndex], 5e-6))
         }
 
         updateScore(target, walls, obstacles){
+            // hit a wall
             for(const wall of walls){
-                if(Matter.SAT.collides(this.body, wall.body)){
-                    this.score -= 1
+                if(Matter.SAT.collides(this.body, wall.body).collided){
+                    this.score -= 3
                 }
             }
+            // hit an obstacle
             for(const obstacle of obstacles){
-                if(Matter.SAT.collides(this.body, obstacle.body)){
+                if(Matter.SAT.collides(this.body, obstacle.body).collided){
                     this.score -= 1
                 }
             }
-            if(Vector.magnitudeSquared(this.body.position, target.body.position) < target.radius**2){
+            // reached the target
+            const distToTarget = Vector.magnitudeSquared(this.body.position, target.body.position)
+            if( distToTarget < target.radius**2){
                 this.score += 10
                 console.log("near the target!")
             }
+            // how close to the target
+            this.score -= distToTarget / 1e6
         }
     }
     return Rocket.prototype.constructor

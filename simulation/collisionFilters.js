@@ -6,7 +6,6 @@ define('collisionFilters', [], () => {
         wall: 1 << 2,
         target: 1 << 3
     }
-    console.log(cats)
     return {
         rocket : {
             group: 0, // we dont use groups here
