@@ -1,58 +1,86 @@
 'use strict'
 
 define('rocket', ['collisionFilters'], (colFilters) => {
-    const Vector = Matter.Vector
+    const Vector = Matter.Vector;
+
     class Rocket {
-        constructor (pos, genome) {
-            this.genome = genome
-            this.score = 0 // used in evaulating fitness
-            this.currentGeneIndex = 0
-            this.size = 20
+        constructor(pos, genome) {
+            this.genome = genome;
+            this.score = 0; // used in evaulating fitness
+            this.currentGeneIndex = 0;
+            this.size = 20;
+
             const vertices = [
-                { x: -this.size*0.33, y: 0 }, { x: 0, y: this.size }, { x: this.size*0.33, y: 0 }, { x: 0, y: this.size*0.20 }
-            ]
+                { x: -this.size * 0.33, y: 0 }, { x: 0, y: this.size }, { x: this.size*0.33, y: 0 }, { x: 0, y: this.size*0.20 }
+            ];
+
             this.body = Matter.Body.create({
                 position: pos,
                 mass: 5e3,
-                inertia: 1e5,
+                inertia: Infinity,
                 vertices: vertices,
                 frictionAir: 0.01
-            })
-            this.body.collisionFilter = colFilters.rocket         
+            });
+
+            this.body.collisionFilter = colFilters.rocket;     
+        }
+
+        reset(pos, genome) {
+            this.genome = genome;
+            this.score = 0;
+            this.currentGeneIndex = 0;
+            
+            Matter.Body.setVelocity(this.body, {x: 0, y: 0});
+            Matter.Body.setAngularVelocity(this.body, 0);
+            Matter.Body.setPosition(this.body, pos);
+            Matter.Body.setForce(this.body, {x: 0, y: 0});
         }
 
         /**
          * Advances to the next genom and apllies it's acceleration
          * @returns True if the whole genom has been traversed => the rocket is pretty much done
          */
-        advance () {
+        advance() {
             if (this.currentGeneIndex === this.genome.length - 1) {
-                return true // rocket wants to continue
-            } else {
+                // rocket doesn't want to continue, because its out of genes
+                return true;
+            }
+            else {
+                // rocket wants to continue
                 this.currentGeneIndex += 1
                 const tipPos = Vector.add(this.body.position, Vector.rotate({ x: 0, y: this.size*0.1 }, this.body.angle))
-                Matter.Body.applyForce(this.body, tipPos,
-                    Vector.mult(this.genome[this.currentGeneIndex], 0.0005))
-                return false // rocket doesn't want to continue, coz its out of genes
+                // Matter.Body.applyForce(this.body, tipPos,
+                //     Vector.mult(this.genome[this.currentGeneIndex], 0.0005));
+                
+                const accmult = 1;
+                let ax = this.genome[this.currentGeneIndex].x * accmult;
+                let ay = this.genome[this.currentGeneIndex].y * accmult;
+
+                let velocity = { x: this.body.velocity.x + ax, y: this.body.velocity.y + ay };
+
+                // const maxVelocity = 3;
+                
+                // let velMag = Vector.magnitude(velocity);
+                // if (velMag > maxVelocity)
+                // {
+                //     velocity = Vector.mult(velocity, maxVelocity / velMag);
+                // }
+
+                Matter.Body.setVelocity(this.body, velocity);
+                    
+                return false;
             }
         }
 
         updateScore(target, walls, obstacles){
-            for(const wall of walls){
-                if(Matter.SAT.collides(this.body, wall.body)){
-                    this.score -= 1
-                }
-            }
-            for(const obstacle of obstacles){
-                if(Matter.SAT.collides(this.body, obstacle.body)){
-                    this.score -= 1
-                }
-            }
-            if(Vector.magnitudeSquared(this.body.position, target.body.position) < target.radius**2){
-                this.score += 10
-                console.log("near the target!")
+            this.score += 1 / Vector.magnitudeSquared(Vector.sub(this.body.position, target.body.position));
+
+            if (Vector.magnitudeSquared(Vector.sub(this.body.position, target.body.position)) < target.radius ** 2){
+                this.score += 10;
+                console.log("inside target!")
             }
         }
     }
-    return Rocket.prototype.constructor
+
+    return Rocket.prototype.constructor;
 })
