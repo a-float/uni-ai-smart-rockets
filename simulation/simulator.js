@@ -14,11 +14,11 @@ define('simulator',
     class Simulator {   // probably pass arguments as one object
         constructor (rocketsNo, iterationsNo, size, rocketStartPos, targetPos, geneLength=5) {
             this.size = size
-            this.geneLength = 15 //geneLength 
+            this.geneLength = 10 //geneLength 
             this.rocketsNo = rocketsNo
             this.rocketStartPos = rocketStartPos
             this.target = new Target(targetPos.x, targetPos.y)
-            this.iterations = 30 //iterationsNo
+            this.maxIterations = 50 //iterationsNo
             // end of saving the passed arguments
             // state of the simulator
             this.currentIteration = 0
@@ -32,12 +32,12 @@ define('simulator',
              * [ms] time between adjacent gene advancements.
              * Change this to change visual speed of the simulation
              */
-            this.rocketUpdateDelay = 100
+            this.rocketUpdateDelay = 130
             /**
              * for how many engine steps rockets accelerate in every gene. 
              * If big it make rocket movement more "robotic"
              */
-            this.engineStepPerGene = 25
+            this.engineStepPerGene = 30
             /*
             * how fast time passes inside the engine.
             */
@@ -107,10 +107,13 @@ define('simulator',
             const results = this.rockets.map(r => {return {score:r.score, id:r.body.id}})
             results.sort((a,b) => b.score - a.score)
             console.log(results)
-            if(this.currentIteration++ == this.iterations){
+            if(this.currentIteration++ == this.maxIterations){
                 console.log("End of the evolution")
             }
             else{
+                for(const rocket of this.rockets){
+                    rocket.evaluateFinish(this.target)
+                }
                 const newGenomes = Genetics.evolve(this.rockets.map(r => {
                     return {score: r.score, genome: r.genome}
                 }))

@@ -3,8 +3,8 @@
 define('genetics', [], () => {
     const minForce = 0.2
     const maxForce = 0.3
-    const genomeMutationChance = 0.4
-    const geneMutationChance = 0.7
+    const genomeMutationChance = 0.8
+    const geneMutationChance = 0.05
 
     /**
      * @param {*} minForce max vector length
