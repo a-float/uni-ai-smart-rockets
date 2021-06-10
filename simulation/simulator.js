@@ -52,6 +52,8 @@ define('simulator', ['wall', 'rocket', 'obstacle', 'target'], function (Wall, Ro
 
     class Simulator {
         constructor(size) {
+            this.mutationProbability = 0.05;
+
             this.size = size
             this.target = new Target(this.size.x * 0.5, this.size.y * 0.1)
             this.rockets = []
@@ -159,7 +161,7 @@ define('simulator', ['wall', 'rocket', 'obstacle', 'target'], function (Wall, Ro
                 const genomeA = matingPool[Math.floor(Math.random() * matingPool.length)];
                 const genomeB = matingPool[Math.floor(Math.random() * matingPool.length)];
                 const newGenome = spliceGenomes(genomeA, genomeB);
-                mutateGenome(newGenome, 0.1);
+                mutateGenome(newGenome, this.mutationProbability);
 
                 this.addRocket(this.getOptimalStartPosition(), newGenome);
             }
