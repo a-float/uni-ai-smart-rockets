@@ -141,7 +141,6 @@ define('simulator', ['wall', 'rocket', 'obstacle', 'target'], function (Wall, Ro
                 // in the mating pool, which will increase their chances of
                 // getting picked for mating.
                 const duplicates = Math.floor(rocket.score / maxScore * 100);
-                console.log(`Adding ${duplicates} duplicates`);
 
                 for (let i = 0; i < duplicates; ++i)
                 {

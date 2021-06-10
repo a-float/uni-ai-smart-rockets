@@ -25,17 +25,6 @@ define('rocket', ['collisionFilters'], (colFilters) => {
             this.body.collisionFilter = colFilters.rocket;     
         }
 
-        reset(pos, genome) {
-            this.genome = genome;
-            this.score = 0;
-            this.currentGeneIndex = 0;
-            
-            Matter.Body.setVelocity(this.body, {x: 0, y: 0});
-            Matter.Body.setAngularVelocity(this.body, 0);
-            Matter.Body.setPosition(this.body, pos);
-            Matter.Body.setForce(this.body, {x: 0, y: 0});
-        }
-
         /**
          * Advances to the next genom and apllies it's acceleration
          * @returns True if the whole genom has been traversed => the rocket is pretty much done
@@ -58,15 +47,17 @@ define('rocket', ['collisionFilters'], (colFilters) => {
 
                 let velocity = { x: this.body.velocity.x + ax, y: this.body.velocity.y + ay };
 
-                // const maxVelocity = 3;
+                const maxVelocity = 3;
                 
-                // let velMag = Vector.magnitude(velocity);
-                // if (velMag > maxVelocity)
-                // {
-                //     velocity = Vector.mult(velocity, maxVelocity / velMag);
-                // }
+                let velMag = Vector.magnitude(velocity);
+                if (velMag > maxVelocity)
+                {
+                    velocity = Vector.mult(velocity, maxVelocity / velMag);
+                }
 
                 Matter.Body.setVelocity(this.body, velocity);
+
+                Matter.Body.setAngle(this.body, Vector.angle(velocity, {x:0, y:1}) + Math.PI / 2);
                     
                 return false;
             }
