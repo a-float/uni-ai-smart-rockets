@@ -9,7 +9,6 @@ define('rocket', ['collisionFilters'], (colFilters) => {
             this.score = 0; // used in evaulating fitness
             this.currentGeneIndex = 0;
             this.size = 20;
-
             const vertices = [
                 { x: -this.size * 0.33, y: 0 }, { x: 0, y: this.size }, { x: this.size*0.33, y: 0 }, { x: 0, y: this.size*0.20 }
             ];
@@ -60,6 +59,27 @@ define('rocket', ['collisionFilters'], (colFilters) => {
                     
                 return false;
             }
+            else {
+                return false // rocket rocket is not done yet
+            }
+        }
+        
+        _applyForceToTheTip(vector, mult){
+            const tipPos = Vector.add(
+                this.body.position, 
+                Vector.rotate({ x: 0, y: this.size*0.1 }, this.body.angle))
+                
+            Matter.Body.applyForce(
+                this.body, 
+                tipPos,
+                Vector.mult(vector, mult))
+        }
+
+        /**
+         * Apply the current gene acceleration steering
+         */
+        updateAcceleration(){
+            this._applyForceToTheTip(this.genome[this.currentGeneIndex], this.accMult)
         }
 
         updateScore(target, walls, obstacles){

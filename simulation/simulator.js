@@ -75,9 +75,11 @@ define('simulator', ['wall', 'rocket', 'obstacle', 'target'], function (Wall, Ro
                     width: size.x,
                     height: size.y,
                     wireframes: true,
-                    showCollisions: true
+                    showCollisions: true,
+                    showIds: true
                 }
             })
+            // making things run
             this.mouseConstraint = this.setMouseConstraint()
             this.obstacleStartPosition = {x:-1, y:-1}
             this.setWalls()
@@ -221,6 +223,7 @@ define('simulator', ['wall', 'rocket', 'obstacle', 'target'], function (Wall, Ro
             // dont capture the mouse scroll
             mouseConstraint.mouse.element.removeEventListener('mousewheel', mouse.mousewheel);
             mouseConstraint.mouse.element.removeEventListener('DOMMouseScroll', mouse.mousewheel);
+            // set the event handlers
             Events.on(mouseConstraint, 'mousedown', this.onMouseDown.bind(this))
             Events.on(mouseConstraint, 'mouseup', this.onMouseUp.bind(this))
             Events.on(mouseConstraint, 'mousemove', this.onMouseMove.bind(this))
