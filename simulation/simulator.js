@@ -65,8 +65,7 @@ define('simulator', ['wall', 'rocket', 'obstacle', 'target'], function (Wall, Ro
             this.accMult = 1
             this.draggingTarget = false
             this.engine = Engine.create({
-                gravity: { x: 0, y: 0 },
-                airFriction: 0
+                gravity: { x: 0, y: 0 }
             })
             this.render = Render.create({
                 element: document.getElementById('canvas-div'),
@@ -76,7 +75,7 @@ define('simulator', ['wall', 'rocket', 'obstacle', 'target'], function (Wall, Ro
                     height: size.y,
                     wireframes: true,
                     showCollisions: true,
-                    showIds: true
+                    // showIds: true
                 }
             })
             // making things run

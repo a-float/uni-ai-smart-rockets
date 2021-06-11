@@ -15,10 +15,8 @@ define('rocket', ['collisionFilters'], (colFilters) => {
 
             this.body = Matter.Body.create({
                 position: pos,
-                mass: 5e3,
-                inertia: Infinity,
                 vertices: vertices,
-                frictionAir: 0.01
+                // frictionAir: 0.01
             });
 
             this.body.collisionFilter = colFilters.rocket;     
@@ -58,9 +56,6 @@ define('rocket', ['collisionFilters'], (colFilters) => {
                 Matter.Body.setAngle(this.body, Vector.angle(velocity, {x:0, y:1}) + Math.PI / 2);
                     
                 return false;
-            }
-            else {
-                return false // rocket rocket is not done yet
             }
         }
         

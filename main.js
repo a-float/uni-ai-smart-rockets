@@ -51,8 +51,8 @@ require(['simulator'], function (Simulator) {
     }
     // mutation
     mutationSlider.onchange = (slider) => {
-        sim.mutationChance = parseFloat(slider.target.value)
-        console.log(`Set mutationChance to ${sim.mutationChance}`)
+        sim.mutationProbability = parseFloat(slider.target.value)
+        console.log(`Set mutationChance to ${sim.mutationProbability}`)
     }
     
     //speed
