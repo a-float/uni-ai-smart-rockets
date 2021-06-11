@@ -36,7 +36,10 @@ define('rocket', ['collisionFilters'], (colFilters) => {
                 //const tipPos = Vector.add(this.body.position, Vector.rotate({ x: 0, y: this.size*0.1 }, this.body.angle))
                 // Matter.Body.applyForce(this.body, tipPos,
                 //     Vector.mult(this.genome[this.currentGeneIndex], 0.0005));
-                
+                if(this.body.isStatic){
+                    this.currentGeneIndex += 1
+                    return false;
+                }
                 let ax = this.genome[this.currentGeneIndex].x * accMult;
                 let ay = this.genome[this.currentGeneIndex].y * accMult;
 
@@ -76,6 +79,13 @@ define('rocket', ['collisionFilters'], (colFilters) => {
          */
         updateAcceleration(){
             this._applyForceToTheTip(this.genome[this.currentGeneIndex], this.accMult)
+        }
+
+        tryToStickToTarget(target){
+            if(Matter.SAT.collides(this.body, target.body).collided){
+                console.log('stuck')
+                this.body.isStatic = true
+            }
         }
 
         updateScore(target, walls, obstacles){

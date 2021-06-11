@@ -59,6 +59,7 @@ define('simulator', ['wall', 'rocket', 'obstacle', 'target'], function (Wall, Ro
             this.rockets = []
             this.walls = []
             this.obstacles = []
+            this.stickToTarget = true
             this.isGenomeOver = false
             this.rocketUpdateDelay = 0.1; // in seconds
             this.looping = false
@@ -112,11 +113,27 @@ define('simulator', ['wall', 'rocket', 'obstacle', 'target'], function (Wall, Ro
                         }
                     }
                     Engine.update(this.engine, now - this.lastDrawTime);
+                    if(this.stickToTarget){
+                        for(const rocket of this.rockets){
+                            rocket.tryToStickToTarget(this.target)
+                        }
+                    }
                 }
                 requestAnimationFrame(this._loop.bind(this));
             }
         }
 
+        switchSticky(newValue){
+            if(newValue === true){
+                this.stickToTarget = true
+                this.target.body.collisionFilter.mask = 0
+            }
+            else if(newValue === false){
+                this.stickToTarget = false
+                this.target.body.collisionFilter.mask = 1 // rockets
+            }
+        }
+        
         removeAllRockets(){
             for(const rocket of this.rockets){
                 Composite.remove(this.engine.world, rocket.body)

@@ -49,11 +49,19 @@
                         <label for="genome-num">Genome length 🐍</label>
                         <input class="form-control" type='number' id='genome-num' min='5' max='150' value='50'><br>
                     </div>
-                    <div class="form-check form-switch mb-3">
-                        <span>
-                            <label class="form-check-label" for="color-switch">Show colors? 🌈</label>
-                        </span>
-                        <input class="form-check-input" type="checkbox" id="color-switch">
+                    <div class="row">
+                        <div class="col col-sm form-check form-switch mb-3">
+                            <span>
+                                <label class="form-check-label" for="color-switch">Show colors? 🌈</label>
+                            </span>
+                            <input class="form-check-input" type="checkbox" id="color-switch">
+                        </div>
+                        <div class="col col-sm form-check form-switch mb-3">
+                            <span>
+                                <label class="form-check-label" for="stick-switch">Stick to target? 🍭</label>
+                            </span>
+                            <input class="form-check-input" type="checkbox" id="stick-switch">
+                        </div>
                     </div>
                     <button class='btn btn-primary' id="reset-button">Reset</button>
                     <button style='min-width:70px' class='btn btn-primary' id="play-button">Pause</button>

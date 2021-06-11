@@ -10,9 +10,9 @@ define('collisionFilters', [], () => {
         rocket : {
             group: 0, // we dont use groups here
             category: cats.rocket, // what is my id
-            mask: cats.wall | cats.obstacle // with which ids do I collide
+            mask: cats.wall | cats.obstacle | cats.target // with which ids do I collide
         },
-        obstacle : {
+        obstacle : { 
             group: 0,
             category: cats.obstacle,
             mask: cats.rocket | cats.wall
@@ -23,7 +23,7 @@ define('collisionFilters', [], () => {
             mask: cats.rocket | cats.obstacle
         },
         target : {
-            group: 0,
+            group: -1,
             category: cats.target,
             mask: 0
         }

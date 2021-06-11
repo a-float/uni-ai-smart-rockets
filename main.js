@@ -20,6 +20,7 @@ require(['simulator'], function (Simulator) {
     const genomeLength = document.getElementById('genome-num')
     const resetBtn = document.getElementById('reset-button')
     const colorSwitch = document.getElementById('color-switch')
+    const stickSwitch = document.getElementById('stick-switch')
     const playBtn = document.getElementById('play-button')
     
     // reset btn
@@ -49,6 +50,10 @@ require(['simulator'], function (Simulator) {
     sim.render.options.wireframes = !colorSwitch.checked
     colorSwitch.onchange = (check) => {
         sim.render.options.wireframes = !check.target.checked
+    }
+    sim.stickToTarget = stickSwitch.checked
+    stickSwitch.onchange = (check) => {
+        sim.stickToTarget = check.target.checked
     }
     // mutation
     mutationSlider.onchange = (slider) => {
