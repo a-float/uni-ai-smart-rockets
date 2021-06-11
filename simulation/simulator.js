@@ -1,8 +1,47 @@
 'use strict'
 
-define('simulator', 
-    ['wall', 'rocket', 'obstacle', 'target', 'genetics'],
-    function (Wall, Rocket, Obstacle, Target, Genetics) {
+const MIN_FORCE = 0.1;
+const MAX_FORCE = 1;
+
+/**
+ * @param {int} len length of the created genome
+ * @returns a list of size len filled with objects {x: accx, y:accy}
+ */
+ function getRandomGenome(len) {
+    return (new Array(len)).fill(0).map(() => { // the fill is kinda ugly
+        const angle = Math.random() * 2 * Math.PI;
+        const force = MIN_FORCE + Math.random() * (MAX_FORCE - MIN_FORCE);
+        return { x: force * Math.cos(angle), y: force * Math.sin(angle) };
+    })
+}
+
+function spliceGenomes(genomeA, genomeB) {
+    console.assert(genomeA.length == genomeB.length, "Cannot splice genomes of differing length");
+
+    let midpoint = Math.floor(Math.random() * genomeA.length);
+
+    let newGenome = [];
+    
+    for (let i = 0; i < genomeA.length; ++i) {
+        newGenome[i] = i < midpoint ? genomeA[i] : genomeB[i];
+    }
+
+    return newGenome;
+}
+
+function mutateGenome(genome, probability) {
+    for (let i = 0; i < genome.length; ++i) {
+        if (Math.random() < probability) {
+            const angle = Math.random() * 2 * Math.PI;
+            const force = MIN_FORCE + Math.random() * (MAX_FORCE - MIN_FORCE);
+            const gene = { x: force * Math.cos(angle), y: force * Math.sin(angle) };
+
+            genome[i] = gene;
+        }
+    }
+}
+
+define('simulator', ['wall', 'rocket', 'obstacle', 'target'], function (Wall, Rocket, Obstacle, Target) {
     const Engine = Matter.Engine
     const Render = Matter.Render
     const Composite = Matter.Composite
@@ -11,43 +50,26 @@ define('simulator',
     const Vector = Matter.Vector
     const MouseConstraint = Matter.MouseConstraint
 
-    class Simulator {   // probably pass arguments as one object
-        constructor (rocketsNo, iterationsNo, size, rocketStartPos, targetPos, geneLength=5) {
+    class Simulator {
+        constructor(size) {
+            this.mutationProbability = 0.05;
+
             this.size = size
-            this.geneLength = 10 //geneLength 
-            this.rocketsNo = rocketsNo
-            this.rocketStartPos = rocketStartPos
-            this.target = new Target(targetPos.x, targetPos.y)
-            this.maxIterations = 50 //iterationsNo
-            // end of saving the passed arguments
-            // state of the simulator
-            this.currentIteration = 0
+            this.target = new Target(this.size.x * 0.5, this.size.y * 0.1)
             this.rockets = []
             this.walls = []
             this.obstacles = []
             this.isGenomeOver = false
+            this.rocketUpdateDelay = 0.1; // in seconds
             this.looping = false
-            // customizables
-            /**
-             * [ms] time between adjacent gene advancements.
-             * Change this to change visual speed of the simulation
-             */
-            this.rocketUpdateDelay = 130
-            /**
-             * for how many engine steps rockets accelerate in every gene. 
-             * If big it make rocket movement more "robotic"
-             */
-            this.engineStepPerGene = 30
-            /*
-            * how fast time passes inside the engine.
-            */
-            this.simTimeStep = 8000
-            
+            this.accMult = 1
+            this.draggingTarget = false
             this.engine = Engine.create({
-                gravity: { x: 0, y: 0 }
+                gravity: { x: 0, y: 0 },
+                airFriction: 0
             })
             this.render = Render.create({
-                element: document.body,
+                element: document.getElementById('canvas-div'),
                 engine: this.engine,
                 options: {
                     width: size.x,
@@ -65,177 +87,192 @@ define('simulator',
             Render.run(this.render)
         }
 
-        setUpRockets(genomes){
-            for(const rocket of this.rockets){
-                Composite.remove(this.engine.world, rocket.body)
-            }
-            this.rockets = []
-            for (let i = 0; i < this.rocketsNo; i++) { // spawn the rockets and give them random genomes
-                this.addRocket(this.rocketStartPos, genomes[i])
-            }
-        }
-
-        /**
-         * Call to begin the simulation
-         */
-        startSimulation () {
-            const randomGenomes = (new Array(this.rocketsNo))
-            .fill(0)
-            .map(_ => Genetics.getRandomGenome(this.geneLength))
-            this.setUpRockets(randomGenomes)
-            console.log(randomGenomes)
-            this.startLoop()
-        }
-
-        startLoop () {
+        startLoop() {
             this.lastDrawTime = performance.now()
             this.lastRocketUpdate = performance.now()
             this.looping = true
             this._loop()
         }
 
-        stopLoop () {
+        stopLoop() {
             this.looping = false
         }
 
-        /**
-         * Called when the generation ends. If it was the last iteration, stops the simulation.
-         */
-        onEndOfGeneration(){
-            this.stopLoop()
-            // print the score
-            const results = this.rockets.map(r => {return {score:r.score, id:r.body.id}})
-            results.sort((a,b) => b.score - a.score)
-            console.log(results)
-            if(this.currentIteration++ == this.maxIterations){
-                console.log("End of the evolution")
-            }
-            else{
-                for(const rocket of this.rockets){
-                    rocket.evaluateFinish(this.target)
-                }
-                const newGenomes = Genetics.evolve(this.rockets.map(r => {
-                    return {score: r.score, genome: r.genome}
-                }))
-                this.isGenomeOver = false
-                this.setUpRockets(newGenomes)
-                this.startLoop()
-            }
-        }
-
-        _loop () {
+        _loop() {
             if (this.looping) {
-                const now = performance.now()
-                // execute the loop engineStepPerGene times per every rocketUpdateDelay seconds
-                if (now - this.lastDrawTime > this.rocketUpdateDelay/this.engineStepPerGene) {
-                    if (now - this.lastRocketUpdate > (this.rocketUpdateDelay)) {
-                        if (this.isGenomeOver){
-                            console.log('End of the generation')
-                            this.onEndOfGeneration()
-                        }
-                        else {
-                            this.lastRocketUpdate = now
-                            console.log('Advancing the rockets')
-                            this.advanceRockets()
+                const now = performance.now();
+
+                if (now - this.lastDrawTime > 1000 / 60) { // the framerate
+                    // do the loopy stuff here
+                    if (!this.isGenomeOver) {
+                        if (now - this.lastRocketUpdate > this.rocketUpdateDelay * 1000) {
+                            this.lastRocketUpdate = now;
+                            
+                            console.log('Advancing the rockets');
+                            this.advanceRockets();
                         }
                     }
-                    Engine.update(this.engine, this.simTimeStep)
-                    for(const rocket of this.rockets){
-                        rocket.updateAcceleration()
-                        rocket.updateScore(this.target, this.walls, this.obstacles)
-                    }
+
+                    Engine.update(this.engine, now - this.lastDrawTime);
                 }
-                
-                requestAnimationFrame(this._loop.bind(this))
+
+                requestAnimationFrame(this._loop.bind(this));
             }
         }
 
-        setWalls () {
-            const wallWidth = 20
+        removeAllRockets(){
+            for(const rocket of this.rockets){
+                Composite.remove(this.engine.world, rocket.body)
+            }
+            this.rockets = []
+        }
+
+        setWalls() {
+            const wallWidth = 20;
             const walls = {
                 top: new Wall(this.size.x * 0.5, -wallWidth * 0.1, this.size.x, wallWidth),
                 bottom: new Wall(this.size.x * 0.5, wallWidth * 0.1 + this.size.y, this.size.x, wallWidth),
                 right: new Wall(wallWidth * 0.1 + this.size.x, this.size.y * 0.5, wallWidth, this.size.y),
                 left: new Wall(-wallWidth * 0.1, this.size.y * 0.5, wallWidth, this.size.y)
-            }
-            this.walls = [...Object.values(walls)]
+            };
+
+            this.walls = [...Object.values(walls)];
             for (const [key, value] of Object.entries(walls)) {
-                value.body.label = key + '_wall'
+                value.body.label = key + '_wall';
             }
-            Composite.add(this.engine.world, Object.values(walls).map(wall => wall.body))
+
+            Composite.add(this.engine.world, Object.values(walls).map(wall => wall.body));
         }
 
-        /**
-         * Makes rocket use the next gene of their genomes
-         */
-        advanceRockets () {
-            let isDone = true
+        regeneratePopulation() {
+            const matingPool = [];
+
+            const maxScore = this.rockets.map(r => r.score).reduce((a, b) => a > b ? a : b);
+            console.log({ maxScore });
+
             for (const rocket of this.rockets) {
-                isDone = rocket.advance() && isDone 
-            } 
-            // every rocket used up all of their genome (all the sizes are the same anyway, so it is kinda unnecessary)
-            if(isDone){
-                this.isGenomeOver = true
+                // The rockets with the highest score will have more occurrances
+                // in the mating pool, which will increase their chances of
+                // getting picked for mating.
+                const duplicates = Math.floor(rocket.score / maxScore * 100);
+
+                for (let i = 0; i < duplicates; ++i)
+                {
+                    matingPool.push(rocket.genome);
+                }
+
+                Composite.remove(this.engine.world, rocket.body);
+            }
+
+            let rocketsToGenerate = this.rockets.length;
+            this.rockets = [];
+
+            console.log(`Generating ${rocketsToGenerate} rockets`);
+
+            for (let i = 0; i < rocketsToGenerate; ++i) {
+                const genomeA = matingPool[Math.floor(Math.random() * matingPool.length)];
+                const genomeB = matingPool[Math.floor(Math.random() * matingPool.length)];
+                const newGenome = spliceGenomes(genomeA, genomeB);
+                mutateGenome(newGenome, this.mutationProbability);
+
+                this.addRocket(this.getOptimalStartPosition(), newGenome);
             }
         }
 
-        addRocket (pos, genome) {
-            const rocket = new Rocket(pos, genome)
-            this.rockets.push(rocket)
-            Composite.add(this.engine.world, rocket.body)
+        advanceRockets() {
+            let isDone = true;
+            for (const rocket of this.rockets) {
+                isDone = rocket.advance(this.accMult) && isDone;
+                rocket.updateScore(this.target, this.walls, this.obstacles);
+            };
+
+            if (isDone) {
+                console.log("The genome is over");
+                console.log(this.rockets.map(r => {return { score: r.score, pos: r.body.position }}));
+
+                this.regeneratePopulation();
+            }
         }
 
-        getRandomPosition () {
-            return { x: Math.random() * this.size.x, y: Math.random() * this.size.y }
+        addRocket(pos, genome) {
+            const rocket = new Rocket(pos, genome);
+            this.rockets.push(rocket);
+            Composite.add(this.engine.world, rocket.body);
         }
 
-        setMouseConstraint(){
+        getRandomPosition() {
+            return { x: Math.random() * this.size.x, y: Math.random() * this.size.y };
+        }
+
+        getOptimalStartPosition() {
+            return { x: this.size.x / 2, y: this.size.y * 0.9 };
+        }
+
+        setMouseConstraint() {
             const mouse = Mouse.create(this.render.canvas);
             const mouseConstraint = MouseConstraint.create(this.engine, {
                 mouse: mouse,
                 constraint: {
                     stiffness: 0.2,
                     render: {
-                        visible: true
+                        visible: true,
                     }
                 }
             });
+
             // dont capture the mouse scroll
             mouseConstraint.mouse.element.removeEventListener('mousewheel', mouse.mousewheel);
             mouseConstraint.mouse.element.removeEventListener('DOMMouseScroll', mouse.mousewheel);
             // set the event handlers
             Events.on(mouseConstraint, 'mousedown', this.onMouseDown.bind(this))
             Events.on(mouseConstraint, 'mouseup', this.onMouseUp.bind(this))
+            Events.on(mouseConstraint, 'mousemove', this.onMouseMove.bind(this))
             Events.on(mouseConstraint, 'startdrag', this.onMouseStartDrag.bind(this))
             Events.on(mouseConstraint, 'enddrag', this.onMouseEndDrag.bind(this))
             return mouseConstraint
         }
 
-        addObstacle(topleft, width, height){
-            const obstacle = new Obstacle(topleft.x, topleft.y, width, height)
-            this.obstacles.push(obstacle)
-            Composite.add(this.engine.world, obstacle.body)
+        addObstacle(topleft, width, height) {
+            const obstacle = new Obstacle(topleft.x, topleft.y, width, height);
+            this.obstacles.push(obstacle);
+            Composite.add(this.engine.world, obstacle.body);
         }
 
-        onMouseStartDrag(){
+        onMouseStartDrag() {
+            
         }
 
-        onMouseEndDrag(){
+        onMouseEndDrag() {
         }
 
-        // creating the obstacles
-        onMouseDown(){
-            this.obstacleStartPosition = Object.assign({}, this.mouseConstraint.mouse.position)
+        onMouseMove(){
+            if(this.draggingTarget){
+                Matter.Body.setPosition(this.target.body, this.mouseConstraint.mouse.position)
+            }
         }
 
-        onMouseUp(){
-            const endDragPos = this.mouseConstraint.mouse.position
-            const posDiff = Vector.sub(this.obstacleStartPosition, endDragPos)
-            if(Vector.magnitudeSquared(posDiff) > 10){
-                const center = Vector.add(endDragPos, Vector.mult(posDiff, 0.5))
-                this.addObstacle(center, Math.abs(posDiff.x), Math.abs(posDiff.y))
+        onMouseDown() {
+            if (Vector.magnitudeSquared(Vector.sub(this.mouseConstraint.mouse.position, this.target.body.position)) < this.target.radius ** 2){
+                this.draggingTarget = true
+                this.obstacleStartPosition = null
+            }
+            else{
+                this.obstacleStartPosition = Object.assign({}, this.mouseConstraint.mouse.position);
+            }
+        }
+
+        onMouseUp() {
+            this.draggingTarget = false
+            if(this.obstacleStartPosition === null)return
+            const endDragPos = this.mouseConstraint.mouse.position;
+            const posDiff = Vector.sub(this.obstacleStartPosition, endDragPos);
+
+            if(Vector.magnitudeSquared(posDiff) > 300) {
+                const center = Vector.add(endDragPos, Vector.mult(posDiff, 0.5));
+                this.addObstacle(center, Math.abs(posDiff.x), Math.abs(posDiff.y));
             }
         }
     }
-    return Simulator.prototype.constructor
+
+    return Simulator.prototype.constructor;
 })

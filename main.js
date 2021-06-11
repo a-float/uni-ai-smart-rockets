@@ -1,12 +1,68 @@
 'use strict'
 requirejs.config({
-    baseUrl: 'simulation'
-})
+    baseUrl: 'simulation',
+});
 
 require(['simulator'], function (Simulator) {
-    const size = { x: 900, y: 600 }
-    const rocketStartPos = { x: 450, y:550}
-    const targetPos = {x: 450, y: 50}
-    const sim = new Simulator(10, 3, size, rocketStartPos, targetPos)
-    sim.startSimulation()
-})
+    const size = { x: 800, y: 500 };
+    const sim = new Simulator(size);
+    sim.rocketUpdateDelay = 0.1; // in seconds
+
+    for (let i = 0; i < 100; i++) {
+        // spawn the rockets and give them random genomes
+        sim.addRocket(sim.getOptimalStartPosition(), getRandomGenome(60));
+    }
+
+    const speedSlider = document.getElementById('speed-slider')
+    const mutationSlider = document.getElementById('mutation-slider')
+    const rocketNum = document.getElementById('rocket-num')
+    const genomeLength = document.getElementById('genome-num')
+    const resetBtn = document.getElementById('reset-button')
+    const colorSwitch = document.getElementById('color-switch')
+    const playBtn = document.getElementById('play-button')
+    
+    // reset btn
+    resetBtn.onclick = () => {
+        sim.stopLoop()
+        sim.removeAllRockets()
+        for (let i = 0; i < parseInt(rocketNum.value); i++) {
+            sim.addRocket(
+                sim.getOptimalStartPosition(), 
+                getRandomGenome(parseInt(genomeLength.value))
+            );
+        }
+        sim.startLoop()
+    }
+    // play/pause btn
+    playBtn.onclick = () => {
+        if(playBtn.innerText === 'Play'){
+            sim.startLoop()
+            playBtn.innerText = 'Pause'
+        }
+        else if(playBtn.innerText === 'Pause'){
+            sim.stopLoop()
+            playBtn.innerText = 'Play'
+        }
+    }
+    // color switch
+    sim.render.options.wireframes = !colorSwitch.checked
+    colorSwitch.onchange = (check) => {
+        sim.render.options.wireframes = !check.target.checked
+    }
+    // mutation
+    mutationSlider.onchange = (slider) => {
+        sim.mutationChance = parseFloat(slider.target.value)
+        console.log(`Set mutationChance to ${sim.mutationChance}`)
+    }
+    
+    //speed
+    speedSlider.onchange = (slider) => {
+        const value = parseFloat(slider.target.value)
+        // sim.rocketUpdateDelay = 1/value
+        sim.accMult = value
+        // accMult * rocketUpdateDelay = 0.1
+        console.log(`Set speed to ${sim.accMult}`)
+    }
+
+    sim.startLoop();
+});
