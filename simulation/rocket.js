@@ -27,13 +27,12 @@ define('rocket', ['collisionFilters'], (colFilters) => {
          * @returns True if the whole genom has been traversed => the rocket is pretty much done
          */
         advance(accMult) {
-            if (this.currentGeneIndex === this.genome.length - 1) {
+            if (this.currentGeneIndex === this.genome.length) {
                 // rocket doesn't want to continue, because its out of genes
                 return true;
             }
             else {
                 // rocket wants to continue
-                this.currentGeneIndex += 1
                 //const tipPos = Vector.add(this.body.position, Vector.rotate({ x: 0, y: this.size*0.1 }, this.body.angle))
                 // Matter.Body.applyForce(this.body, tipPos,
                 //     Vector.mult(this.genome[this.currentGeneIndex], 0.0005));
@@ -52,9 +51,11 @@ define('rocket', ['collisionFilters'], (colFilters) => {
                 }
 
                 Matter.Body.setVelocity(this.body, velocity);
-
-                Matter.Body.setAngle(this.body, Vector.angle(velocity, {x:0, y:1}) + Math.PI / 2);
-                    
+                const angle = Math.atan2(velocity.x, velocity.y);
+                // the line below always takes the smallest angle difference between vectors - can't go over PI/2
+                // Matter.Body.setAngle(this.body, Vector.angle(velocity, {x:0, y:1}) + Math.PI / 2);
+                Matter.Body.setAngle(this.body, angle)
+                this.currentGeneIndex += 1
                 return false;
             }
         }
@@ -78,6 +79,17 @@ define('rocket', ['collisionFilters'], (colFilters) => {
         }
 
         updateScore(target, walls, obstacles){
+            for(const obstacle of obstacles){
+                if(Matter.SAT.collides(this.body, obstacle.body).collided){
+                    this.score -= 3
+                }
+            }
+            for(const wall of walls){
+                if(Matter.SAT.collides(this.body, wall.body).collided){
+                    this.score -= 3
+                }
+            }
+
             this.score += 1 / Vector.magnitudeSquared(Vector.sub(this.body.position, target.body.position));
 
             if (Vector.magnitudeSquared(Vector.sub(this.body.position, target.body.position)) < target.radius ** 2){

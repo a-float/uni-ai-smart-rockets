@@ -111,10 +111,8 @@ define('simulator', ['wall', 'rocket', 'obstacle', 'target'], function (Wall, Ro
                             this.advanceRockets();
                         }
                     }
-
                     Engine.update(this.engine, now - this.lastDrawTime);
                 }
-
                 requestAnimationFrame(this._loop.bind(this));
             }
         }

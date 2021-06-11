@@ -8,12 +8,13 @@ require(['simulator'], function (Simulator) {
     const sim = new Simulator(size);
     sim.rocketUpdateDelay = 0.1; // in seconds
 
-    for (let i = 0; i < 100; i++) {
-        // spawn the rockets and give them random genomes
-        sim.addRocket(sim.getOptimalStartPosition(), getRandomGenome(60));
-    }
+    // for (let i = 0; i < 100; i++) {
+    //     // spawn the rockets and give them random genomes
+    //     sim.addRocket(sim.getOptimalStartPosition(), getRandomGenome(60));
+    // }
 
     const speedSlider = document.getElementById('speed-slider')
+    const forceSlider = document.getElementById('force-slider')
     const mutationSlider = document.getElementById('mutation-slider')
     const rocketNum = document.getElementById('rocket-num')
     const genomeLength = document.getElementById('genome-num')
@@ -54,15 +55,23 @@ require(['simulator'], function (Simulator) {
         sim.mutationProbability = parseFloat(slider.target.value)
         console.log(`Set mutationChance to ${sim.mutationProbability}`)
     }
-    
-    //speed
+    mutationSlider.onchange({target:mutationSlider})
+    // speed
     speedSlider.onchange = (slider) => {
+        sim.rocketUpdateDelay = parseFloat(slider.target.value)/1000
+        console.log(`Set rocketDelay to ${sim.rocketUpdateDelay}`)
+    }
+    speedSlider.onchange({target:speedSlider})
+    //force
+    forceSlider.onchange = (slider) => {
         const value = parseFloat(slider.target.value)
         // sim.rocketUpdateDelay = 1/value
         sim.accMult = value
         // accMult * rocketUpdateDelay = 0.1
-        console.log(`Set speed to ${sim.accMult}`)
+        console.log(`Set accMult to ${sim.accMult}`)
     }
+    forceSlider.onchange({target:forceSlider})
 
-    sim.startLoop();
+    resetBtn.onclick()
+    // sim.startLoop();
 });
