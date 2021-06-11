@@ -57,7 +57,7 @@ define('rocket', ['collisionFilters'], (colFilters) => {
                 const angle = Math.atan2(velocity.x, velocity.y);
                 // the line below always takes the smallest angle difference between vectors - can't go over PI/2
                 // Matter.Body.setAngle(this.body, Vector.angle(velocity, {x:0, y:1}) + Math.PI / 2);
-                Matter.Body.setAngle(this.body, angle)
+                Matter.Body.setAngle(this.body, -angle)
                 this.currentGeneIndex += 1
                 return false;
             }
@@ -83,7 +83,7 @@ define('rocket', ['collisionFilters'], (colFilters) => {
 
         tryToStickToTarget(target){
             if(Matter.SAT.collides(this.body, target.body).collided){
-                console.log('stuck')
+                this.score += 10
                 this.body.isStatic = true
             }
         }
