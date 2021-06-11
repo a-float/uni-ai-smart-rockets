@@ -62,11 +62,14 @@ define('simulator', ['wall', 'rocket', 'obstacle', 'target'], function (Wall, Ro
             this.isGenomeOver = false
             this.rocketUpdateDelay = 0.1; // in seconds
             this.looping = false
+            this.accMult = 1
+            this.draggingTarget = false
             this.engine = Engine.create({
-                gravity: { x: 0, y: 0 }
+                gravity: { x: 0, y: 0 },
+                airFriction: 0
             })
             this.render = Render.create({
-                element: document.body,
+                element: document.getElementById('canvas-div'),
                 engine: this.engine,
                 options: {
                     width: size.x,
@@ -113,6 +116,13 @@ define('simulator', ['wall', 'rocket', 'obstacle', 'target'], function (Wall, Ro
 
                 requestAnimationFrame(this._loop.bind(this));
             }
+        }
+
+        removeAllRockets(){
+            for(const rocket of this.rockets){
+                Composite.remove(this.engine.world, rocket.body)
+            }
+            this.rockets = []
         }
 
         setWalls() {
@@ -170,7 +180,7 @@ define('simulator', ['wall', 'rocket', 'obstacle', 'target'], function (Wall, Ro
         advanceRockets() {
             let isDone = true;
             for (const rocket of this.rockets) {
-                isDone = rocket.advance() && isDone;
+                isDone = rocket.advance(this.accMult) && isDone;
                 rocket.updateScore(this.target, this.walls, this.obstacles);
             };
 
@@ -213,6 +223,7 @@ define('simulator', ['wall', 'rocket', 'obstacle', 'target'], function (Wall, Ro
             mouseConstraint.mouse.element.removeEventListener('DOMMouseScroll', mouse.mousewheel);
             Events.on(mouseConstraint, 'mousedown', this.onMouseDown.bind(this))
             Events.on(mouseConstraint, 'mouseup', this.onMouseUp.bind(this))
+            Events.on(mouseConstraint, 'mousemove', this.onMouseMove.bind(this))
             Events.on(mouseConstraint, 'startdrag', this.onMouseStartDrag.bind(this))
             Events.on(mouseConstraint, 'enddrag', this.onMouseEndDrag.bind(this))
             return mouseConstraint
@@ -225,20 +236,35 @@ define('simulator', ['wall', 'rocket', 'obstacle', 'target'], function (Wall, Ro
         }
 
         onMouseStartDrag() {
+            
         }
 
         onMouseEndDrag() {
         }
 
+        onMouseMove(){
+            if(this.draggingTarget){
+                Matter.Body.setPosition(this.target.body, this.mouseConstraint.mouse.position)
+            }
+        }
+
         onMouseDown() {
-            this.obstacleStartPosition = Object.assign({}, this.mouseConstraint.mouse.position);
+            if (Vector.magnitudeSquared(Vector.sub(this.mouseConstraint.mouse.position, this.target.body.position)) < this.target.radius ** 2){
+                this.draggingTarget = true
+                this.obstacleStartPosition = null
+            }
+            else{
+                this.obstacleStartPosition = Object.assign({}, this.mouseConstraint.mouse.position);
+            }
         }
 
         onMouseUp() {
+            this.draggingTarget = false
+            if(this.obstacleStartPosition === null)return
             const endDragPos = this.mouseConstraint.mouse.position;
             const posDiff = Vector.sub(this.obstacleStartPosition, endDragPos);
 
-            if(Vector.magnitudeSquared(posDiff) > 10) {
+            if(Vector.magnitudeSquared(posDiff) > 300) {
                 const center = Vector.add(endDragPos, Vector.mult(posDiff, 0.5));
                 this.addObstacle(center, Math.abs(posDiff.x), Math.abs(posDiff.y));
             }

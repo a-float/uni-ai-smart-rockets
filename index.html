@@ -1,17 +1,67 @@
 <!DOCTYPE html>
 <html lang="en">
-    <head>
-        <meta charset="UTF-8">
-        <meta http-equiv="X-UA-Compatible" content="IE=edge">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <link rel="icon" type="image/ico" href="favicon.ico"/>
-        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.1/dist/css/bootstrap.min.css" integrity="undefined" crossorigin="anonymous">
-        <link rel="stylesheet" href="styles.css">
-        <script src="./simulation/matter_min.js"></script>
-        <script data-main="main" src="simulation/require.js"></script>
-        <title>Smart Rockets</title>
-    </head>
-    <body>
-        <h1>👇 Hopefully Smart Rockets Below 👇</h1>
-    </body>
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/ico" href="favicon.ico"/>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.1/dist/css/bootstrap.min.css" integrity="undefined" crossorigin="anonymous">
+    <link rel="stylesheet" href="styles.css">
+    <script src="./simulation/matter_min.js"></script>
+    <script data-main="main" src="simulation/require.js"></script>
+    <title>Smart Rockets</title>
+
+    <style>
+
+        #input-div{
+            max-width: 500px;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="container" class='container'>
+        </div>
+        <div class="row">
+            <div class='col-sm text-center' id='canvas-div'>
+                <h1 class='mb-4'>👇 Smart Rockets Below 👇</h1>
+            </div>
+            <div class='col-sm mt-5 pt-3' id='input-div'>
+                <div id='input-panel'>
+                    <div class="form-group">
+                        <label for="speed-slider">Speed 🏃 <small>(the strength of rockets' boosts)</small></label>
+                        <input class="form-range" type='range' id='speed-slider' step='0.5' min='0.5' max='10' value='1'><br>
+                    </div>
+                    <div class="form-group">
+                        <label for="mutation-slider">Mutation chance 💉</label>
+                        <input class="form-range" type='range' id='mutation-slider' min='0' max='1' step='0.01' value='0.5'><br>
+                    </div>
+                    <div class="form-group">
+                        <label for="rocket-num">Rockets 🚀</label>
+                        <input class="form-control" type='number' id='rocket-num' min='1' max='1000' value='70'><br>
+                    </div>
+                    <div class="form-group">
+                        <label for="genome-num">Genome length 🐍</label>
+                        <input class="form-control" type='number' id='genome-num' min='5' max='150' value='50'><br>
+                    </div>
+                    <div class="form-check form-switch mb-3">
+                        <span>
+                            <label class="form-check-label" for="color-switch">Show colors? 🌈</label>
+                        </span>
+                        <input class="form-check-input" type="checkbox" id="color-switch">
+                    </div>
+                    <button class='btn btn-primary' id="reset-button">Reset</button>
+                    <button style='min-width:70px' class='btn btn-primary' id="play-button">Pause</button>
+                </div>
+                <div class="alert alert-info w-75 mt-4" role="alert">
+                    <b>💎Tip:</b><br>
+                    You can move the target by dragging it and create obstacles by dragging over an empty space!
+                  </div>
+            </div>
+        </div>
+    </div>
+
+</body>
+
 </html>

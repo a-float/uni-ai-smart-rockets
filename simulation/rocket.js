@@ -29,7 +29,7 @@ define('rocket', ['collisionFilters'], (colFilters) => {
          * Advances to the next genom and apllies it's acceleration
          * @returns True if the whole genom has been traversed => the rocket is pretty much done
          */
-        advance() {
+        advance(accMult) {
             if (this.currentGeneIndex === this.genome.length - 1) {
                 // rocket doesn't want to continue, because its out of genes
                 return true;
@@ -37,13 +37,12 @@ define('rocket', ['collisionFilters'], (colFilters) => {
             else {
                 // rocket wants to continue
                 this.currentGeneIndex += 1
-                const tipPos = Vector.add(this.body.position, Vector.rotate({ x: 0, y: this.size*0.1 }, this.body.angle))
+                //const tipPos = Vector.add(this.body.position, Vector.rotate({ x: 0, y: this.size*0.1 }, this.body.angle))
                 // Matter.Body.applyForce(this.body, tipPos,
                 //     Vector.mult(this.genome[this.currentGeneIndex], 0.0005));
                 
-                const accmult = 1;
-                let ax = this.genome[this.currentGeneIndex].x * accmult;
-                let ay = this.genome[this.currentGeneIndex].y * accmult;
+                let ax = this.genome[this.currentGeneIndex].x * accMult;
+                let ay = this.genome[this.currentGeneIndex].y * accMult;
 
                 let velocity = { x: this.body.velocity.x + ax, y: this.body.velocity.y + ay };
 
@@ -68,7 +67,7 @@ define('rocket', ['collisionFilters'], (colFilters) => {
 
             if (Vector.magnitudeSquared(Vector.sub(this.body.position, target.body.position)) < target.radius ** 2){
                 this.score += 10;
-                console.log("inside target!")
+                // console.log("inside target!")
             }
         }
     }
