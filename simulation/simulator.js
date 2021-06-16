@@ -69,7 +69,7 @@ define('simulator', ['wall', 'rocket', 'obstacle', 'target'], function (Wall, Ro
                 gravity: { x: 0, y: 0 }
             })
             this.render = Render.create({
-                element: document.getElementById('canvas-div'),
+                element: document.getElementById('canvas-here'),
                 engine: this.engine,
                 options: {
                     width: size.x,

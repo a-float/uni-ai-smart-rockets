@@ -100,9 +100,9 @@ define('rocket', ['collisionFilters'], (colFilters) => {
                 }
             }
 
-            this.score += 1 / Vector.magnitudeSquared(Vector.sub(this.body.position, target.body.position));
+            this.score += 1 / Vector.magnitudeSquared(Vector.sub(this.body.position, target.body.position)) ** 2;
 
-            if (Vector.magnitudeSquared(Vector.sub(this.body.position, target.body.position)) < target.radius ** 2){
+            if (Vector.magnitudeSquared(Vector.sub(this.body.position, target.body.position)) < target.radius ** 2 + 10){
                 this.score += 10;
                 // console.log("inside target!")
             }
